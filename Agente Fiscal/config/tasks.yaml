@@ -1,0 +1,33 @@
+responder_perguntas_fiscais:
+  description: >
+    Analisar os dados de notas fiscais do arquivo CSV e responder perguntas específicas sobre:
+    - Valores de impostos (ICMS, IPI, PIS, COFINS)
+    - Informações de produtos e fornecedores
+    - Conformidade fiscal e tributária
+    - Análises estatísticas dos dados fiscais
+    - Identificação de inconsistências ou padrões nos dados
+    
+    Pergunta do usuário: {pergunta}
+    
+    Instruções:
+    1. Consulte os dados dos arquivos 202401_NFs_Itens.csv e 202401_NFs_Cabecalho.csv
+    2. Analise as informações relevantes para a pergunta
+    3. Forneça dados específicos e exemplos concretos
+    4. Cite valores, códigos e referências quando aplicável
+  
+  expected_output: >
+    Uma resposta completa e estruturada contendo:
+    - Análise detalhada baseada nos dados do CSV
+    - Valores específicos e estatísticas relevantes
+    - Exemplos concretos extraídos dos dados
+    - Recomendações de conformidade fiscal quando aplicável
+    - Referências às regulamentações fiscais brasileiras pertinentes
+    - Formatação clara com títulos, subtítulos e listas quando necessário
+  
+  agent: especialista_fiscal
+  
+  context: >
+    Utilize sempre os dados do arquivo CSV como fonte primária de informação.
+    Caso não encontre informações específicas nos dados, informe claramente essa limitação.
+    Priorize respostas baseadas em evidências dos dados reais.
+
