@@ -1,0 +1,257 @@
+data_consolidation:
+  description: >
+    CONSOLIDAR E INTEGRAR MÚLTIPLAS PLANILHAS DE RH EM BASE ÚNICA
+    
+    OBJETIVO PRINCIPAL:
+    Criar uma base de dados consolidada e confiável integrando todas as planilhas
+    de entrada, garantindo consistência, integridade e qualidade dos dados.
+    
+    FONTES DE DADOS A PROCESSAR:
+    1. ATIVOS.xlsx - Colaboradores ativos (base principal)
+    2. FERIAS.xlsx - Colaboradores em férias no período
+    3. DESLIGADOS.xlsx - Funcionários desligados no mês
+    4. ADMISSAO ABRIL.xlsx - Novos colaboradores admitidos
+    5. AFASTAMENTOS.xlsx - Licenças e afastamentos diversos
+    6. ESTAGIO.xlsx - Lista de estagiários ativos
+    7. APRENDIZ.xlsx - Lista de aprendizes ativos
+    8. EXTERIOR.xlsx - Colaboradores trabalhando no exterior
+    9. Base sindicato x valor.xlsx - Tabela de valores por estado
+    10. Base dias uteis.xlsx - Dias úteis por sindicato/período
+    
+    ATIVIDADES ESPECÍFICAS:
+    1. PADRONIZAÇÃO DE DADOS:
+       - Normalizar formato de matrículas (5 dígitos com zeros à esquerda)
+       - Padronizar nomes de colunas conforme convenção estabelecida
+       - Limpar espaços extras, caracteres especiais e inconsistências
+       - Validar e corrigir formatos de data (DD/MM/YYYY)
+    
+    2. INTEGRAÇÃO INTELIGENTE:
+       - Usar MATRICULA como chave primária para todos os joins
+       - Aplicar left joins preservando todos os colaboradores ativos
+       - Criar flags booleanas: EM_FERIAS, DESLIGADO, AFASTADO, etc.
+       - Manter rastreabilidade da origem de cada informação
+    
+    3. VALIDAÇÕES DE QUALIDADE:
+       - Verificar duplicatas por matrícula e tratar adequadamente
+       - Validar integridade referencial entre as bases
+       - Identificar campos obrigatórios faltantes
+       - Detectar valores implausíveis ou inconsistentes
+    
+    4. DOCUMENTAÇÃO DO PROCESSO:
+       - Registrar estatísticas de cada arquivo processado
+       - Documentar transformações e limpezas realizadas
+       - Identificar e reportar anomalias encontradas
+       - Gerar log detalhado do processo de consolidação
+
+  expected_output: >
+    Base de dados consolidada em formato DataFrame contendo:
+    1. Todos os colaboradores ativos com informações integradas
+    2. Flags de situação (férias, desligamentos, afastamentos, etc.)
+    3. Informações de sindicato, valores e dias úteis mapeados
+    4. Relatório detalhado de consolidação com estatísticas e validações
+    5. Log de qualidade identificando inconsistências tratadas
+
+business_rules_application:
+  description: >
+    APLICAR REGRAS DE NEGÓCIO E ACORDOS COLETIVOS SINDICAIS
+    
+    OBJETIVO PRINCIPAL:
+    Implementar todas as regras trabalhistas, acordos sindicais e políticas
+    internas para determinar elegibilidade ao benefício VR/VA e calcular
+    valores proporcionais conforme situação de cada colaborador.
+    
+    REGRAS DE EXCLUSÃO OBRIGATÓRIAS:
+    1. EXCLUSÃO POR CARGO:
+       - Diretores (todos os níveis hierárquicos)
+       - Estagiários (conforme base ESTAGIO.xlsx)
+       - Aprendizes (conforme base APRENDIZ.xlsx)
+       - Validar através de palavras-chave no campo CARGO
+    
+    2. EXCLUSÃO POR SITUAÇÃO:
+       - Colaboradores em licença maternidade
+       - Funcionários em afastamento médico prolongado
+       - Profissionais em licença sem vencimentos
+       - Colaboradores atuando no exterior
+    
+    3. EXCLUSÃO POR DESLIGAMENTO:
+       - Desligados até dia 15 COM comunicado "OK": 0 dias de VR
+       - Desligados até dia 15 SEM comunicado "OK": manter proporcional
+       - Validar obrigatoriedade do campo COMUNICADO_DESLIGAMENTO
+    
+    REGRAS DE CÁLCULO PROPORCIONAL:
+    1. ADMISSÕES NO MÊS:
+       - Fórmula: (30 - dia_admissao + 1) / 30 * dias_uteis_sindicato
+       - Validar data de admissão dentro da competência
+       - Mínimo de 1 dia para admissões no último dia útil
+    
+    2. DESLIGAMENTOS APÓS DIA 15:
+       - Fórmula: (dia_demissao / 30) * dias_uteis_sindicato
+       - Aplicar apenas se comunicado diferente de "OK"
+       - Considerar apenas dias efetivamente trabalhados
+    
+    3. FÉRIAS NO PERÍODO:
+       - Fórmula: dias_uteis_sindicato - dias_ferias
+       - Não permitir valores negativos (mínimo = 0)
+       - Validar período de férias versus competência
+
+  expected_output: >
+    Base elegível com regras aplicadas contendo:
+    1. Apenas colaboradores elegíveis ao benefício VR/VA
+    2. Dias úteis calculados conforme situação individual
+    3. Flags indicando regras aplicadas a cada colaborador
+    4. Relatório detalhado de exclusões por categoria
+    5. Validação de conformidade com acordos coletivos
+
+vr_value_calculation:
+  description: >
+    CALCULAR VALORES PRECISOS DE VR/VA POR COLABORADOR
+    
+    OBJETIVO PRINCIPAL:
+    Executar todos os cálculos financeiros necessários para determinação
+    dos valores de vale refeição/alimentação, considerando dias úteis
+    específicos, valores por sindicato e rateio empresa/funcionário.
+    
+    CÁLCULOS PRINCIPAIS:
+    1. VALOR TOTAL POR COLABORADOR:
+       - Fórmula: dias_uteis_final × valor_diario_sindicato
+       - Arredondar para 2 casas decimais
+       - Validar que dias_uteis_final ≥ 0
+    
+    2. CUSTO PARA EMPRESA:
+       - Fórmula: valor_total × 0.80 (80%)
+       - Política corporativa padrão
+       - Arredondar para 2 casas decimais
+    
+    3. DESCONTO DO FUNCIONÁRIO:
+       - Fórmula: valor_total × 0.20 (20%)
+       - Complemento do custo empresa
+       - Garantir que soma = valor_total
+    
+    MAPEAMENTO DE VALORES POR ESTADO:
+    1. São Paulo (SP): R$ 37,50 por dia útil
+    2. Rio de Janeiro (RJ): R$ 35,00 por dia útil
+    3. Paraná (PR): R$ 35,00 por dia útil
+    4. Rio Grande do Sul (RS): R$ 35,00 por dia útil
+
+  expected_output: >
+    Base com valores calculados contendo:
+    1. Valor total de VR por colaborador
+    2. Rateio entre custo empresa e desconto funcionário
+    3. Dias úteis finais aplicados nos cálculos
+    4. Relatório financeiro consolidado por sindicato
+    5. Validação matemática de todos os cálculos
+
+quality_validation:
+  description: >
+    VALIDAR QUALIDADE E CONSISTÊNCIA DOS DADOS PROCESSADOS
+    
+    OBJETIVO PRINCIPAL:
+    Executar validação rigorosa de qualidade em todos os dados processados,
+    detectar inconsistências, anomalias e garantir precisão antes do
+    envio final para fornecedores e stakeholders.
+    
+    VALIDAÇÕES DE INTEGRIDADE:
+    1. CAMPOS OBRIGATÓRIOS:
+       - Verificar preenchimento de matrícula, sindicato, dias úteis
+       - Validar presença de valores financeiros calculados
+       - Confirmar que competência está informada
+       - Identificar registros com dados faltantes críticos
+    
+    2. VALIDAÇÕES DE NEGÓCIO:
+       - Confirmar que todos os excluídos foram removidos
+       - Validar aplicação correta das regras por cargo
+       - Verificar tratamento de situações especiais
+       - Conferir comunicados de desligamento obrigatórios
+    
+    3. DETECÇÃO DE ANOMALIAS:
+       - Identificar outliers nos valores calculados
+       - Detectar padrões anômalos por sindicato
+       - Verificar distribuição esperada dos valores
+       - Alertar para variações significativas vs histórico
+
+  expected_output: >
+    Relatório completo de qualidade contendo:
+    1. Status de aprovação/reprovação com justificativa detalhada
+    2. Lista categorizada de problemas encontrados e soluções aplicadas
+    3. Estatísticas de validação por tipo de verificação realizada
+    4. Identificação de casos excepcionais que requerem atenção especial
+    5. Recomendações específicas para melhorias futuras no processo
+
+purchase_processing:
+  description: >
+    PROCESSAR COMPRA DE VR/VA E PREPARAR DOCUMENTAÇÃO PARA FORNECEDORES
+    
+    OBJETIVO PRINCIPAL:
+    Preparar e processar a compra de vales refeição/alimentação, gerando
+    todos os documentos necessários no formato exigido pelos fornecedores
+    e garantindo conformidade com procedimentos internos.
+    
+    PREPARAÇÃO DO LAYOUT DE COMPRA:
+    1. FORMATO DA PLANILHA FINAL:
+       - Matricula (texto, 5 dígitos com zeros à esquerda)
+       - Admissão (data formato MM/DD/YY ou vazio se não aplicável)
+       - Sindicato do Colaborador (texto completo)
+       - Competência (formato MM/YYYY)
+       - Dias (número decimal, 2 casas)
+       - VALOR DIÁRIO VR (número decimal, 2 casas)
+       - TOTAL (número decimal, 2 casas)
+       - Custo empresa (número decimal, 2 casas)
+       - Desconto profissional (número decimal, 2 casas)
+       - OBS GERAL (texto livre para observações)
+    
+    2. VALIDAÇÕES PRÉ-ENVIO:
+       - Verificar se todos os campos obrigatórios estão preenchidos
+       - Validar formato de todas as colunas conforme especificação
+       - Confirmar que totalizadores batem com cálculos anteriores
+       - Verificar se não há registros duplicados por matrícula
+
+  expected_output: >
+    Pacote completo de compra contendo:
+    1. Arquivo Excel formatado para envio ao fornecedor
+    2. Resumo executivo com métricas principais da compra
+    3. Relatórios auxiliares de controle e auditoria
+    4. Validação final de conformidade com especificações
+    5. Log detalhado do processo de preparação da compra
+
+communication_management:
+  description: >
+    GERENCIAR COMUNICAÇÕES E ENVIOS AUTOMATIZADOS DO PROCESSO VR/VA
+    
+    OBJETIVO PRINCIPAL:
+    Coordenar todas as comunicações do processo, enviar emails automatizados
+    para stakeholders, gerar relatórios executivos e manter transparência
+    total sobre andamento e resultados do processamento.
+    
+    EMAIL PARA EMPRESA VR:
+    1. DESTINATÁRIO: drpalmiere@gmail.com
+    2. ASSUNTO: "Pedido de Compra de Vales"
+    3. CONTEÚDO OBRIGATÓRIO:
+       - Saudação formal e identificação da empresa
+       - Competência sendo processada (MM/YYYY)
+       - Resumo quantitativo: total de colaboradores e valores
+       - Detalhamento por sindicato/estado se relevante
+       - Instruções para processamento pelo fornecedor
+       - Prazos esperados para entrega dos vales
+       - Contato para esclarecimentos e confirmações
+    4. ANEXOS:
+       - Planilha Excel com layout padrão de compra
+       - Resumo executivo em PDF (se aplicável)
+    
+    EMAIL PARA RH INTERNO:
+    1. DESTINATÁRIO: drpalmiere@gmail.com
+    2. ASSUNTO: "Compra realizada com Sucesso"
+    3. CONTEÚDO OBRIGATÓRIO:
+       - Confirmação de conclusão do processo
+       - Competência processada e data/hora de conclusão
+       - Métricas principais: colaboradores, valores, distribuição
+       - Status do envio para fornecedor (confirmado/pendente)
+       - Casos excepcionais identificados e tratamento aplicado
+       - Próximos passos e cronograma de entrega
+
+  expected_output: >
+    Pacote completo de comunicação contendo:
+    1. Confirmação de envio bem-sucedido dos emails obrigatórios
+    2. Relatório executivo visual com dashboard de métricas principais
+    3. Documentação técnica completa para auditoria e compliance
+    4. Log detalhado de todas as comunicações realizadas
+    5. Evidências de recebimento e feedback dos destinatários
