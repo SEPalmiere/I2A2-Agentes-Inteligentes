@@ -41,8 +41,8 @@ class VRAutomationSystem:
             'dia_corte_desligamento': 15,
             'cargos_excluidos': ['DIRETOR', 'ESTAGIARIO', 'APRENDIZ'],
             'situacoes_afastamento': ['LICENÇA MATERNIDADE', 'AFASTAMENTO', 'LICENÇA MÉDICA'],
-            'email_vr': 'drpalmiere@gmail.com',
-            'email_rh': 'drpalmiere@gmail.com'
+            'email_vr': 'email@gmail.com',
+            'email_rh': 'email@gmail.com'
         }
         
         self.logger.info(f"⚙️ Configurações carregadas: {self.config}")
