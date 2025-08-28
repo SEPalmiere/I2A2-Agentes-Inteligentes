@@ -1,5 +1,5 @@
 # requirements.txt para Sistema VR/VA
-streamlit==1.29.0
+streamlit==1.37.0
 crewai==0.28.8
 crewai-tools==0.1.6
 pandas==2.1.4
