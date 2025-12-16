@@ -121,7 +121,7 @@ huggingface-hub==0.35.3
 transformers==4.49.2
 
 # Cache & Storage
-filelock==3.20.0
+filelock==3.20.1
 fsspec==2024.6.1
 gitdb==4.0.12
 gitpython==3.1.45
